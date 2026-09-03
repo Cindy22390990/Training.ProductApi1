@@ -1,7 +1,7 @@
 # Visual Studio
 .vs/
 
-# Build
+# Build output
 bin/
 obj/
 
@@ -14,3 +14,11 @@ obj/
 
 # Environment settings
 appsettings.Development.json
+appsettings.*.json
+
+# User Secrets
+secrets.json
+
+# OS files
+.DS_Store
+Thumbs.db
