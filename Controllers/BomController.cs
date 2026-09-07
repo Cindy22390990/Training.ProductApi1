@@ -53,17 +53,20 @@ public class BomController : ControllerBase
             await _bomService.AddAsync(bom);
             _logger.LogInformation("新增成功 ProductId={ProductId} MaterialId={MaterialId}", dto.ProductId, dto.MaterialId);
 
-            return Ok(
-               ApiResponse<object>
-               .SuccessResult(
-                   new
-                   {
-                       bom.Id,
-                       bom.ProductId,
-                       bom.MaterialId,
-                       bom.Quantity
-                   },
-                   "新增 BOM 成功"));
+        var result = new BomResultDto
+        {
+            Id = bom.Id,
+            ProductId = bom.ProductId,
+            MaterialId = bom.MaterialId,
+            Quantity = bom.Quantity
+        };
+
+
+        return Ok(
+            ApiResponse<BomResultDto>
+            .SuccessResult(
+                result,
+                "新增 BOM 成功"));
 
 
 
@@ -93,15 +96,19 @@ public class BomController : ControllerBase
             await _bomService.UpdateAsync(bom);
 
             _logger.LogInformation("修改 BOM 成功 Id={Id}",bom.Id);
+        var result = new BomResultDto
+        {
+            Id = bom.Id,
+            ProductId = bom.ProductId,
+            MaterialId = bom.MaterialId,
+            Quantity = bom.Quantity
+        };
+
+
         return Ok(
-            ApiResponse<object>.SuccessResult(
-                new
-                {
-                    bom.Id,
-                    bom.ProductId,
-                    bom.MaterialId,
-                    bom.Quantity
-                },
+            ApiResponse<BomResultDto>
+            .SuccessResult(
+                result,
                 "修改 BOM 成功"));
 
 
@@ -115,9 +122,9 @@ public class BomController : ControllerBase
             _logger.LogInformation("刪除 BOM 成功 Id={Id}",id);
 
             return Ok(
-                ApiResponse<object>
+                ApiResponse<bool>
                 .SuccessResult(
-                    null,
+                    true,
                     "刪除 BOM 成功"));
 
     }
