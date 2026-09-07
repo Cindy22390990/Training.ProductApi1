@@ -5,7 +5,7 @@ namespace Training.ProductApi1.Services;
 
 public interface IBomService
 {
-    Task<BomPageResultDto> GetPagedAsync(
+    Task<PagedResult<Bom>> GetPagedAsync(
         string? keyword,
         int pageIndex,
         int pageSize);

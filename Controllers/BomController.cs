@@ -12,25 +12,36 @@ public class BomController : ControllerBase
     
     
     private readonly IBomService _bomService;
-    public BomController(IBomService bomService)
+    private readonly ILogger<BomController> _logger;
+    public BomController(
+    IBomService bomService,
+    ILogger<BomController> logger)
     {
         _bomService = bomService;
+        _logger = logger;
     }
     [HttpGet]
     public async Task<IActionResult> GetAll(string? keyword, int pageIndex = 1, int pageSize = 10)
     {
+        _logger.LogInformation("查詢 BOM 列表 keyword={Keyword}, pageIndex={PageIndex}, pageSize={PageSize}",
+            keyword,
+            pageIndex,
+            pageSize);
         var result = await _bomService
             .GetPagedAsync(keyword, pageIndex, pageSize);
 
 
-        return Ok(result);
+        return Ok(
+            ApiResponse<PagedResult<Bom>>
+            .SuccessResult(
+                result,
+                "查詢 BOM 列表成功"));
     }
     //POST /api/boms
     [HttpPost]
-    public async Task<IActionResult> Create(BomResponseDto dto)
+    public async Task<IActionResult> Create(BomCreateDto dto)
     {
-        try
-        {
+        
 
             var bom = new Bom
             {
@@ -40,75 +51,75 @@ public class BomController : ControllerBase
                 CreatedAt = DateTime.Now
             };
             await _bomService.AddAsync(bom);
+            _logger.LogInformation("新增成功 ProductId={ProductId} MaterialId={MaterialId}", dto.ProductId, dto.MaterialId);
 
-            return Ok(new
-            {
-                bom.Id,
-                bom.ProductId,
-                bom.MaterialId,
-                bom.Quantity
-            });
-        }
-        catch (Exception exception)
-        {
-            return BadRequest(new
-            {
-                message = "新增 BOM 發生錯誤",
-                error = exception.Message
-            });
-        }
+            return Ok(
+               ApiResponse<object>
+               .SuccessResult(
+                   new
+                   {
+                       bom.Id,
+                       bom.ProductId,
+                       bom.MaterialId,
+                       bom.Quantity
+                   },
+                   "新增 BOM 成功"));
+
+
+
     }
         //PUT /api/boms/{id}
         [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, BomUpdateDto dto)
     {
-        try
-        {
+
             var bom = await _bomService.GetByIdAsync(id);
 
-            if (bom == null)
-                return NotFound();
+        if (bom == null)
+        {
+            _logger.LogWarning(
+                "修改 BOM 找不到 Id={Id}",
+                id);
 
-            bom.MaterialId = dto.MaterialId;
+
+            return NotFound(
+                ApiResponse<object>.FailResult(
+                    "Bom 不存在"));
+        }
+
+        bom.MaterialId = dto.MaterialId;
             bom.Quantity = dto.Quantity;
 
             await _bomService.UpdateAsync(bom);
 
-            return Ok(new
-            {
-                bom.Id,
-                bom.ProductId,
-                bom.MaterialId,
-                bom.Quantity
-            });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new
-            {
-                message = "修改 BOM 發生錯誤",
-                error = ex.Message
-            });
-        }
+            _logger.LogInformation("修改 BOM 成功 Id={Id}",bom.Id);
+        return Ok(
+            ApiResponse<object>.SuccessResult(
+                new
+                {
+                    bom.Id,
+                    bom.ProductId,
+                    bom.MaterialId,
+                    bom.Quantity
+                },
+                "修改 BOM 成功"));
+
+
     }
     //DELETE /api/boms/{id}
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        try
-        {
+       
             await _bomService.DeleteAsync(id);
+            _logger.LogInformation("刪除 BOM 成功 Id={Id}",id);
 
-            return NoContent();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new
-            {
-                message = "刪除 BOM 發生錯誤",
-                error = ex.Message
-            });
-        }
+            return Ok(
+                ApiResponse<object>
+                .SuccessResult(
+                    null,
+                    "刪除 BOM 成功"));
+
     }
     //GET /api/boms/by-product 
     [HttpGet("by-product")]
@@ -116,7 +127,11 @@ public class BomController : ControllerBase
     {
         var result = await _bomService.GetByProductAsync(productName);
 
-        return Ok(result);
+        return Ok(
+        ApiResponse<List<BomProductResultDto>>
+        .SuccessResult(
+            result,
+            "查詢產品 BOM 成功"));
     }
     //GET /api/boms/by-material
     [HttpGet("by-material")]
@@ -124,6 +139,10 @@ public class BomController : ControllerBase
     {
         var result = await _bomService.GetByMaterialAsync(materialName);
 
-        return Ok(result);
+        return Ok(
+        ApiResponse<List<BomMaterialResultDto>>
+        .SuccessResult(
+            result,
+            "查詢物料 BOM 成功"));
     }
 }

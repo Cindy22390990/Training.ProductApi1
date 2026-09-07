@@ -9,7 +9,7 @@ public interface IProductService
     Task AddAsync(Product product);//新增
     Task UpdateAsync(Product product);//修改
     Task DeleteAsync(string id);//刪除
-    Task<ProductPageResultDto> GetPagedAsync(
+    Task<PagedResult<Product>> GetPagedAsync(
     int pageIndex,
     int pageSize);
 

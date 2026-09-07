@@ -10,12 +10,14 @@ public class MaterialService : IMaterialService
     private readonly IMaterialRepository _materialRepository;
     private readonly IHistoryRepository _historyRepository;
     private readonly IBomRepository _bomRepository;
+    private readonly ILogger<MaterialService> _logger;
     public MaterialService(IMaterialRepository materialRepository, IHistoryRepository historyRepository,
-    IBomRepository bomRepository)
+    IBomRepository bomRepository, ILogger<MaterialService> logger)
     {
         _materialRepository = materialRepository;
         _historyRepository = historyRepository;
         _bomRepository = bomRepository;
+        _logger = logger;
     }
     public async Task<Material?> GetByIdAsync(string id)
     {
@@ -28,11 +30,17 @@ public class MaterialService : IMaterialService
 
         if (exists)
         {
+            _logger.LogWarning(
+                "新增 Material 失敗，MaterialId 已存在 Id={MaterialId}",
+                material.MaterialId);
+
             throw new Exception("MaterialId 已存在");
         }
 
         await _materialRepository.AddAsync(material);
-
+        _logger.LogInformation(
+            "新增 Material 成功 MaterialId={MaterialId}",
+            material.MaterialId);
         var history = new History
         {
             TargetId = material.MaterialId,
@@ -52,6 +60,10 @@ public class MaterialService : IMaterialService
 
         if (existingMaterial == null)
         {
+            _logger.LogWarning(
+                "修改 Material 失敗，不存在 MaterialId={MaterialId}",
+                material.MaterialId);
+
             throw new Exception("Material 不存在");
         }
 
@@ -62,7 +74,9 @@ public class MaterialService : IMaterialService
 
 
         await _materialRepository.UpdateAsync(existingMaterial);
-
+        _logger.LogInformation(
+            "修改 Material 成功 MaterialId={MaterialId}",
+            material.MaterialId);
 
         var history = new History
         {
@@ -78,11 +92,15 @@ public class MaterialService : IMaterialService
 
     public async Task DeleteAsync(string id)
     {
-        var Material = await _materialRepository.GetByIdAsync(id);
+        var material = await _materialRepository.GetByIdAsync(id);
 
 
-        if (Material == null)
+        if (material == null)
         {
+            _logger.LogWarning(
+                "刪除 Material 失敗，不存在 MaterialId={MaterialId}",
+                id);
+
             throw new Exception("Material 不存在");
         }
 
@@ -92,17 +110,24 @@ public class MaterialService : IMaterialService
 
         if (hasBom)
         {
-            throw new Exception("此物料已有 BOM 關聯，禁止刪除");
+            _logger.LogWarning(
+                "刪除 Material 失敗，存在 BOM 關聯 MaterialId={MaterialId}",
+                id);
+
+            throw new Exception(
+                "此物料已有 BOM 關聯，禁止刪除");
         }
 
 
         await _materialRepository.DeleteAsync(id);
-
+        _logger.LogInformation(
+            "刪除 Material 成功 MaterialId={MaterialId}",
+            id);
 
         var history = new History
         {
             TargetId = id,
-            Category = "Materialt",
+            Category = "Material",
             Action = "Delete",
             Status = "Success"
         };
@@ -110,11 +135,20 @@ public class MaterialService : IMaterialService
 
         await _historyRepository.AddAsync(history);
     }
-    public async Task<MaterialPageResultDto> GetPagedAsync(
+    public async Task<PagedResult<Material>> GetPagedAsync(
     string? keyword,
     int pageIndex,
     int pageSize)
     {
+        if (pageIndex <= 0)
+        {
+            pageIndex = 1;
+        }
+
+        if (pageSize <= 0)
+        {
+            pageSize = 10;
+        }
         var query = _materialRepository.GetAll();
         if (!string.IsNullOrWhiteSpace(keyword))
         {
@@ -125,13 +159,13 @@ public class MaterialService : IMaterialService
         var totalCount = await query.CountAsync();
 
 
-        var Material = await query
+        var materials = await query
             .Skip((pageIndex - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
 
 
-        return new MaterialPageResultDto
+        return new PagedResult<Material>
         {
             TotalCount = totalCount,
 
@@ -142,7 +176,7 @@ public class MaterialService : IMaterialService
 
             PageSize = pageSize,
 
-            Data = Material
+            Data = materials
         };
     }
 

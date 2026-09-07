@@ -4,7 +4,7 @@ namespace Training.ProductApi1.Services;
 
 public interface IMaterialService
 {
-    Task<MaterialPageResultDto> GetPagedAsync(
+    Task<PagedResult<Material>> GetPagedAsync(
     string? keyword,
     int pageIndex,
     int pageSize);
